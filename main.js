@@ -6,6 +6,11 @@ import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 const DEV_STATS = false;   // FPS overlay, dev only
 const ENABLE_BLOOM = false; // post-processing glow, wired but off (sprites already glow)
 
+// Embed mode (?embed=1): hide the control panel, force auto-rotate on. The view mode
+// is already side-by-side by default, so an embedded iframe shows a clean, self-running
+// side-by-side comparison with no chrome.
+const EMBED = new URLSearchParams(window.location.search).has('embed');
+
 // --- tunables ---
 const DISK_RADIUS = 15.5;   // kpc, matches the reference
 const BASE_OPACITY = 0.65;  // point-cloud opacity in toggle mode
@@ -30,7 +35,7 @@ const points = {};        // key -> THREE.Points
 let diskMesh = null;
 let manifest = null;
 
-let viewMode = 'toggle';  // 'toggle' | 'side'
+let viewMode = 'side';    // 'toggle' | 'side'; ships as side-by-side by default
 let crossfade = 0;        // 0 = evolving, 1 = static (current animated value)
 let crossfadeTarget = 0;  // target for the crossfade animation
 let lastTime = 0;
@@ -38,11 +43,11 @@ let lastTime = 0;
 const initialCamera = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
 
 const guiConfig = {
-    view: 'Toggle',
+    view: 'Side-by-side',
     model: 'Evolving',
     pointSize: 0.25,
     diskBrightness: 1.0,
-    autoRotate: false,
+    autoRotate: true,
     rotationSpeed: 0.25,
     resetCamera: () => resetCamera(),
 };
@@ -186,7 +191,7 @@ function init() {
     controls.enablePan = false;          // pan disabled per design
     controls.rotateSpeed = 0.9;
     controls.zoomSpeed = 1.0;
-    controls.autoRotate = false;
+    controls.autoRotate = guiConfig.autoRotate || EMBED;
     // Auto-rotate orbits about the camera up axis (z, since up = +z), so it works
     // from any camera angle.
     controls.autoRotateSpeed = guiConfig.rotationSpeed * 5.0;
@@ -205,7 +210,7 @@ function init() {
     frameCamera();
     updateCameraAspect();
 
-    setupGUI();
+    if (!EMBED) setupGUI();   // embed mode hides the control panel
     applyViewMode();
 
     if (DEV_STATS) {

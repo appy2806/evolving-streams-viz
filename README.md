@@ -42,7 +42,10 @@ stream with no extra metadata.
 
 ## Embedding
 
-    <iframe src="https://YOUR-HOST/evolving-streams-viz/"
+Add `?embed=1` to the URL for a clean embed: the control panel is hidden and auto-rotate
+runs on its own. The view is side-by-side either way.
+
+    <iframe src="https://YOUR-HOST/evolving-streams-viz/?embed=1"
             width="100%" height="640"
             style="border:0; background:#000;"
             allowfullscreen loading="lazy"

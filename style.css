@@ -1,0 +1,154 @@
+html {
+    font-family: "Roboto", sans-serif;
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    background-color: #000000;
+    color: #ccc;
+    margin: 0;
+    overflow: hidden;
+    font-weight: 300;
+    width: 100%;
+    height: 100%;
+}
+
+#container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+a {
+    color: #4cc9f0;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.top-center {
+    position: absolute;
+    top: 12px;
+    left: 0;
+    width: 100%;
+    padding: 6px;
+    text-align: center;
+    pointer-events: none;
+    box-sizing: border-box;
+}
+
+.top-center a {
+    pointer-events: auto;
+}
+
+#info {
+    color: #ddd;
+    font-size: 13px;
+    line-height: 1.5;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+#info b {
+    font-weight: 500;
+    font-size: 16px;
+}
+
+#status {
+    top: 50%;
+    transform: translateY(-50%);
+    color: #aaa;
+    font-size: 14px;
+}
+
+#status.error {
+    color: #ff6b6b;
+    font-weight: 400;
+}
+
+#footer {
+    position: absolute;
+    bottom: 10px;
+    right: 12px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #999;
+    text-align: right;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+/* Per-viewport labels for side-by-side mode */
+#labels {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.viewport-label {
+    position: absolute;
+    top: 96px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #eee;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.95);
+    display: none;
+    box-sizing: border-box;
+}
+
+/* Labels flank the center divider so they stay clear of the GUI panel and
+   read unambiguously against their own viewport. */
+#label-left {
+    left: 0;
+    width: 50%;
+    text-align: right;
+    padding-right: 28px;
+}
+
+#label-right {
+    left: 50%;
+    width: 50%;
+    text-align: left;
+    padding-left: 28px;
+}
+
+/* Centered model title shown in Toggle mode. */
+#label-toggle {
+    left: 0;
+    width: 100%;
+    text-align: center;
+}
+
+body:not(.side-by-side) #label-toggle {
+    display: block;
+}
+
+body.side-by-side #label-left,
+body.side-by-side #label-right {
+    display: block;
+}
+
+/* Faint divider between the two viewports in side-by-side mode */
+body.side-by-side #container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.12);
+    pointer-events: none;
+}
+
+@media (max-width: 640px) {
+    #info b { font-size: 14px; }
+    #info { font-size: 11px; }
+    #footer { font-size: 10px; }
+    .viewport-label { font-size: 11px; top: 88px; }
+}

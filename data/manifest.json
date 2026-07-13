@@ -1,0 +1,33 @@
+{
+  "seed": 42069,
+  "units": "kpc",
+  "models": {
+    "evolving": {
+      "file": "evolving.bin",
+      "n_streams": 200,
+      "n_particles": 1000,
+      "n_points": 200000,
+      "label": "Evolving asymmetric host (m12i)"
+    },
+    "static": {
+      "file": "static.bin",
+      "n_streams": 200,
+      "n_particles": 1000,
+      "n_points": 200000,
+      "label": "Static symmetric host (MWPotential2022)"
+    }
+  },
+  "bounds": {
+    "min": [
+      -92.5099868774414,
+      -84.18251037597656,
+      -97.51519775390625
+    ],
+    "max": [
+      97.41952514648438,
+      80.26326751708984,
+      94.47895812988281
+    ],
+    "radius_kpc": 97.79573822021484
+  }
+}

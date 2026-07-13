@@ -1,0 +1,14 @@
+# internal / working files, not for the public repo
+CLAUDE.md
+prepare_data.py
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
+scratch/
+notes/
+# local source data must never end up in the repo
+*.zarr/
+*.h5
+# NOTE: do NOT ignore data/*.bin or assets/*.jpg - the hosted site needs them

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <title>Stellar streams in evolving models</title>
+
+        <link rel="stylesheet" type="text/css" href="style.css">
+        <link href="https://fonts.googleapis.com/css?family=Roboto:400,300,500,700" rel="stylesheet" type="text/css">
+
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js",
+                    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/"
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <div id="container"></div>
+
+        <!-- Per-viewport labels, shown in side-by-side mode -->
+        <div id="labels">
+            <div id="label-toggle" class="viewport-label"></div>
+            <div id="label-left" class="viewport-label"></div>
+            <div id="label-right" class="viewport-label"></div>
+        </div>
+
+        <!-- Title / info overlay -->
+        <div id="info" class="top-center">
+            <b>Stellar streams in evolving models</b><br>
+            Catalogs from <a href="https://arxiv.org/abs/2605.16200" target="_blank" rel="noopener">Arora et al. 2026</a><br>
+            Left-drag: rotate. Scroll: zoom.
+        </div>
+
+        <!-- Loading / error message -->
+        <div id="status" class="top-center">Loading stream catalogs...</div>
+
+        <!-- Footer credits -->
+        <div id="footer">
+            Visualization by <a href="https://arpitarora.space/" target="_blank" rel="noopener">Arpit Arora</a> and <a href="https://adrian.pw" target="_blank" rel="noopener">Adrian Price-Whelan</a>.<br>
+            Milky Way image credit: <a href="http://stefanpw.myportfolio.com/" target="_blank" rel="noopener">Stefan Payne-Wardenaar</a>.
+        </div>
+
+        <script type="module" src="main.js"></script>
+    </body>
+</html>

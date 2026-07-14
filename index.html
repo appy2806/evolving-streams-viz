@@ -30,13 +30,94 @@
 
         <!-- Title / info overlay -->
         <div id="info" class="top-center">
-            <b>Stellar streams in evolving models</b><br>
-            Catalogs from <a href="https://arxiv.org/abs/2605.16200" target="_blank" rel="noopener">Arora et al. 2026</a><br>
-            Left-drag: rotate. Scroll: zoom.
+            <div class="info-title">Stellar streams in evolving models</div>
+            <div class="info-source">Catalogs from <a href="https://arxiv.org/abs/2605.16200" target="_blank" rel="noopener">Arora et al. 2026</a></div>
+            <div class="info-hint" id="info-hint">Left-drag: rotate. Scroll: zoom.</div>
         </div>
 
         <!-- Loading / error message -->
         <div id="status" class="top-center">Loading stream catalogs...</div>
+
+        <!-- Draggable control panel: gear toggles the collapsed GUI -->
+        <div id="controls">
+            <button id="gear" type="button" title="Controls" aria-label="Controls" aria-expanded="false">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                    <path fill="currentColor" d="M19.14 12.94a7.49 7.49 0 0 0 .05-.94 7.49 7.49 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.61l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54a7 7 0 0 0-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.28 8.87a.5.5 0 0 0 .12.61l2.03 1.58a7.49 7.49 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.61l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96a7 7 0 0 0 1.62.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54a7 7 0 0 0 1.62-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.61l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"/>
+                </svg>
+            </button>
+            <div id="gui-mount">
+                <div class="panel">
+                    <div class="grp">
+                        <div class="grp-label">Model</div>
+                        <div class="seg" id="seg-model" role="group" aria-label="Model view">
+                            <span class="seg-ind" aria-hidden="true"></span>
+                            <button class="seg-btn" type="button" data-mode="evolving" aria-pressed="false">Evolving</button>
+                            <button class="seg-btn" type="button" data-mode="static" aria-pressed="false">Static</button>
+                            <button class="seg-btn" type="button" data-mode="both" aria-pressed="true">Both</button>
+                        </div>
+                    </div>
+
+                    <div class="ctrl">
+                        <div class="ctrl-head">
+                            <label for="r-streams">Streams</label>
+                            <div class="ctrl-val">
+                                <input class="pill" id="v-streams" type="number" min="1" max="200" step="1" value="100" inputmode="numeric" aria-label="Streams value">
+                                <button class="mini-reset" data-range="r-streams" type="button" title="Reset to 100" aria-label="Reset Streams">&#8635;</button>
+                            </div>
+                        </div>
+                        <input class="range" id="r-streams" type="range" min="1" max="200" step="1" value="100">
+                    </div>
+
+                    <div class="ctrl">
+                        <div class="ctrl-head">
+                            <label for="r-size">Point size</label>
+                            <div class="ctrl-val">
+                                <input class="pill" id="v-size" type="number" min="0.05" max="0.5" step="0.01" value="0.25" inputmode="decimal" aria-label="Point size value">
+                                <button class="mini-reset" data-range="r-size" type="button" title="Reset to 0.25" aria-label="Reset Point size">&#8635;</button>
+                            </div>
+                        </div>
+                        <input class="range" id="r-size" type="range" min="0.05" max="0.5" step="0.01" value="0.25">
+                    </div>
+
+                    <div class="ctrl">
+                        <div class="ctrl-head">
+                            <label for="r-disk">Disk glow</label>
+                            <div class="ctrl-val">
+                                <input class="pill" id="v-disk" type="number" min="0" max="2" step="0.05" value="1.00" inputmode="decimal" aria-label="Disk glow value">
+                                <button class="mini-reset" data-range="r-disk" type="button" title="Reset to 1.00" aria-label="Reset Disk glow">&#8635;</button>
+                            </div>
+                        </div>
+                        <input class="range" id="r-disk" type="range" min="0" max="2" step="0.05" value="1">
+                    </div>
+
+                    <div class="ctrl ctrl-row">
+                        <label for="sw-rotate">Auto-rotate</label>
+                        <button class="switch on" id="sw-rotate" type="button" role="switch" aria-checked="true"><span class="knob"></span></button>
+                    </div>
+
+                    <div class="ctrl">
+                        <div class="ctrl-head">
+                            <label for="r-speed">Rotation</label>
+                            <div class="ctrl-val">
+                                <input class="pill" id="v-speed" type="number" min="0.05" max="2" step="0.05" value="0.25" inputmode="decimal" aria-label="Rotation speed value">
+                                <button class="mini-reset" data-range="r-speed" type="button" title="Reset to 0.25" aria-label="Reset Rotation">&#8635;</button>
+                            </div>
+                        </div>
+                        <input class="range" id="r-speed" type="range" min="0.05" max="2" step="0.05" value="0.25">
+                    </div>
+
+                    <button class="ghost-btn" id="btn-reset" type="button">Reset view</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fullscreen toggle (shown in embed too, for in-press) -->
+        <button id="fs-btn" type="button" title="Fullscreen" aria-label="Toggle fullscreen">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/>
+            </svg>
+        </button>
 
         <!-- Footer credits -->
         <div id="footer">

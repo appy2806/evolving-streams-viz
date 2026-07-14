@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 // --- dev / feature flags (off for shipping) ---
 const DEV_STATS = false;   // FPS overlay, dev only
@@ -15,7 +14,7 @@ const EMBED = new URLSearchParams(window.location.search).has('embed');
 const DISK_RADIUS = 15.5;   // kpc, matches the reference
 const BASE_OPACITY = 0.65;  // point-cloud opacity in toggle mode
 const FADE_MS = 400;        // crossfade duration
-const INIT_VIEW_KPC = 30;   // initial camera framing; user can zoom out to the full halo
+const INIT_VIEW_KPC = 40;   // initial camera framing; user can zoom out to the full halo
 const MODEL_KEYS = ['evolving', 'static'];
 
 // Curated vivid palette. Reads well on black and over the disk image. Cycled by
@@ -42,14 +41,15 @@ let lastTime = 0;
 
 const initialCamera = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
 
+// UI state. modelMode drives both the view layout and the crossfade:
+// 'evolving'/'static' -> single-cloud toggle view, 'both' -> side-by-side.
 const guiConfig = {
-    view: 'Side-by-side',
-    model: 'Evolving',
+    modelMode: 'both',
+    nStreams: 100,
     pointSize: 0.25,
     diskBrightness: 1.0,
     autoRotate: true,
     rotationSpeed: 0.25,
-    resetCamera: () => resetCamera(),
 };
 
 // Soft round sprite (radial gradient) for additive-blended glow.
@@ -210,8 +210,16 @@ function init() {
     frameCamera();
     updateCameraAspect();
 
-    if (!EMBED) setupGUI();   // embed mode hides the control panel
+    if (!EMBED) {
+        wireControls();       // custom console panel
+        setupControlPanel();  // gear toggle + drag behavior
+    } else {
+        document.getElementById('controls').style.display = 'none';
+    }
     applyViewMode();
+    setStreams(guiConfig.nStreams);   // default subset applied to both models
+    setupHint();                      // touch-aware interaction wording
+    setupFullscreen();                // shown in embed too
 
     if (DEV_STATS) {
         import('three/addons/libs/stats.module.js').then(({ default: Stats }) => {
@@ -229,38 +237,211 @@ function init() {
     animate();
 }
 
-function setupGUI() {
-    const gui = new GUI();
+// Switch between the three model views. 'both' is side-by-side; the single-model
+// modes reuse the crossfade so the transition into/out of Both stays smooth.
+function setModelMode(mode) {
+    guiConfig.modelMode = mode;
+    if (mode === 'both') {
+        viewMode = 'side';
+    } else {
+        viewMode = 'toggle';
+        crossfadeTarget = mode === 'static' ? 1 : 0;
+    }
+    applyViewMode();
+}
 
-    gui.add(guiConfig, 'view', ['Toggle', 'Side-by-side']).name('View').onChange(v => {
-        viewMode = v === 'Side-by-side' ? 'side' : 'toggle';
-        applyViewMode();
+// Show the first n streams of each model. Streams are stored contiguously, so a draw
+// range is all it takes; no data reload, and both models stay in lockstep.
+function setStreams(n) {
+    guiConfig.nStreams = n;
+    MODEL_KEYS.forEach(k => {
+        const m = manifest.models[k];
+        const count = Math.max(1, Math.min(m.n_streams, n)) * m.n_particles;
+        if (points[k]) points[k].geometry.setDrawRange(0, count);
     });
+    render();
+}
 
-    gui.add(guiConfig, 'model', ['Evolving', 'Static']).name('Model (Toggle)').onChange(v => {
-        crossfadeTarget = v === 'Static' ? 1 : 0;
-        updateToggleLabel();
+// Wire a slider to its editable number field. Dragging the slider updates the field;
+// typing in the field (committed on Enter/blur) clamps to [min,max] and moves the
+// slider; the per-field reset button restores the default. The number of decimals is
+// inferred from the range step, so integer controls show a bare count.
+function bindRange(rangeId, numId, def, onInput) {
+    const range = document.getElementById(rangeId);
+    const num = document.getElementById(numId);
+    const min = parseFloat(range.min), max = parseFloat(range.max);
+    const decimals = (range.step.split('.')[1] || '').length;
+    const clamp = v => Math.max(min, Math.min(max, v));
+    const fmt = v => decimals ? v.toFixed(decimals) : String(Math.round(v));
+
+    const paint = () => {
+        const pct = ((parseFloat(range.value) - min) / (max - min)) * 100;
+        range.style.background = 'linear-gradient(to right, var(--accent) 0%, var(--accent) ' +
+            pct + '%, var(--track) ' + pct + '%, var(--track) 100%)';
+    };
+    // fromNum: true when the number field is the source, so we don't overwrite what the
+    // user just typed with a reformatted copy mid-edit.
+    const apply = (v, fromNum) => {
+        range.value = v;
+        if (!fromNum) num.value = fmt(v);
+        paint();
+        onInput(v);
+    };
+
+    range.addEventListener('input', () => apply(parseFloat(range.value), false));
+    num.addEventListener('change', () => {
+        let v = parseFloat(num.value);
+        if (Number.isNaN(v)) v = def;
+        v = clamp(v);
+        num.value = fmt(v);
+        apply(v, true);
     });
+    const resetBtn = num.parentElement.querySelector('.mini-reset');
+    if (resetBtn) resetBtn.addEventListener('click', () => { num.value = fmt(def); apply(def, true); });
 
-    const cam = gui.addFolder('Camera');
-    cam.add(guiConfig, 'autoRotate').name('Auto-rotate').onChange(v => { controls.autoRotate = v; });
-    cam.add(guiConfig, 'rotationSpeed', 0.05, 2.0).name('Rotation speed').onChange(v => {
-        controls.autoRotateSpeed = v * 5.0;
-    });
-    cam.add(guiConfig, 'resetCamera').name('Reset camera');
-    cam.open();
+    num.value = fmt(parseFloat(range.value));
+    paint();
+}
 
-    const sc = gui.addFolder('Scene');
-    sc.add(guiConfig, 'pointSize', 0.05, 0.5).name('Point size').onChange(v => { setPointSize(v); render(); });
-    sc.add(guiConfig, 'diskBrightness', 0.0, 2.0).name('Disk brightness').onChange(v => {
+function wireControls() {
+    // Segmented model control with a sliding cyan indicator.
+    const seg = document.getElementById('seg-model');
+    const ind = seg.querySelector('.seg-ind');
+    const btns = [...seg.querySelectorAll('.seg-btn')];
+    const modes = btns.map(b => b.dataset.mode);
+    const selectMode = (mode) => {
+        const i = modes.indexOf(mode);
+        btns.forEach((b, j) => {
+            const on = j === i;
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        ind.style.transform = 'translateX(' + (i * 100) + '%)';
+        setModelMode(mode);
+    };
+    btns.forEach(b => b.addEventListener('click', () => selectMode(b.dataset.mode)));
+    selectMode(guiConfig.modelMode);
+
+    bindRange('r-streams', 'v-streams', 100, v => setStreams(v | 0));
+    bindRange('r-size', 'v-size', 0.25, v => { setPointSize(v); render(); });
+    bindRange('r-disk', 'v-disk', 1.0, v => {
         if (diskMesh) diskMesh.material.opacity = v;
         render();
     });
-    sc.open();
+    bindRange('r-speed', 'v-speed', 0.25, v => { controls.autoRotateSpeed = v * 5.0; });
+
+    // Auto-rotate pill switch.
+    const sw = document.getElementById('sw-rotate');
+    const setSwitch = (on) => {
+        guiConfig.autoRotate = on;
+        controls.autoRotate = on;
+        sw.classList.toggle('on', on);
+        sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    };
+    setSwitch(guiConfig.autoRotate);
+    sw.addEventListener('click', () => setSwitch(!guiConfig.autoRotate));
+
+    document.getElementById('btn-reset').addEventListener('click', () => resetCamera());
+}
+
+// Gear button: toggles the collapsed panel and can be dragged (mouse or touch)
+// anywhere on screen. A small movement threshold distinguishes a tap from a drag.
+function setupControlPanel() {
+    const controls = document.getElementById('controls');
+    const gear = document.getElementById('gear');
+
+    let dragging = false;
+    let moved = false;
+    let startX = 0, startY = 0, originRight = 0, originTop = 0;
+    const THRESH = 5;  // px of travel before a tap becomes a drag
+    const M = 8;       // min gap from the viewport edges
+
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+    // Anchor by the RIGHT edge so the gear stays put while the panel grows leftward
+    // and downward. Clamp both axes so the expanded panel is never pushed off-screen.
+    function place(right, top) {
+        const w = controls.offsetWidth;
+        const h = controls.offsetHeight;
+        controls.style.left = 'auto';
+        controls.style.right = clamp(right, M, Math.max(M, window.innerWidth - w - M)) + 'px';
+        controls.style.top = clamp(top, M, Math.max(M, window.innerHeight - h - M)) + 'px';
+    }
+
+    function currentPos() {
+        const rect = controls.getBoundingClientRect();
+        return { right: window.innerWidth - rect.right, top: rect.top };
+    }
+
+    gear.addEventListener('pointerdown', (e) => {
+        dragging = true;
+        moved = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        const p = currentPos();
+        originRight = p.right;
+        originTop = p.top;
+        gear.setPointerCapture(e.pointerId);
+    });
+
+    gear.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        if (Math.abs(dx) > THRESH || Math.abs(dy) > THRESH) moved = true;
+        place(originRight - dx, originTop + dy);
+    });
+
+    gear.addEventListener('pointerup', (e) => {
+        if (!dragging) return;
+        dragging = false;
+        if (gear.hasPointerCapture(e.pointerId)) gear.releasePointerCapture(e.pointerId);
+        if (!moved) {
+            const open = controls.classList.toggle('open');
+            gear.setAttribute('aria-expanded', open ? 'true' : 'false');
+            // The panel just changed size: re-clamp so it stays fully on-screen.
+            const p = currentPos();
+            place(p.right, p.top);
+        }
+    });
+
+    // Keep it on-screen through rotation / resize.
+    window.addEventListener('resize', () => {
+        const p = currentPos();
+        place(p.right, p.top);
+    });
+}
+
+// The interaction hint depends on the input device: touch has no left-drag or scroll.
+function setupHint() {
+    const el = document.getElementById('info-hint');
+    if (!el) return;
+    const touch = window.matchMedia('(pointer: coarse)').matches;
+    el.textContent = touch ? 'Drag: rotate. Pinch: zoom.' : 'Left-drag: rotate. Scroll: zoom.';
+}
+
+// Fullscreen toggle. Works inside an iframe when the embed grants allowfullscreen.
+function setupFullscreen() {
+    const btn = document.getElementById('fs-btn');
+    if (!btn) return;
+    const target = document.documentElement;
+    btn.addEventListener('click', () => {
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+            (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+        } else {
+            (target.requestFullscreen || target.webkitRequestFullscreen)?.call(target);
+        }
+    });
+    const onChange = () => {
+        btn.classList.toggle('active', !!(document.fullscreenElement || document.webkitFullscreenElement));
+        onWindowResize();
+    };
+    document.addEventListener('fullscreenchange', onChange);
+    document.addEventListener('webkitfullscreenchange', onChange);
 }
 
 function updateToggleLabel() {
-    const key = guiConfig.model === 'Static' ? 'static' : 'evolving';
+    const key = guiConfig.modelMode === 'static' ? 'static' : 'evolving';
     document.getElementById('label-toggle').textContent = manifest.models[key].label;
 }
 

@@ -47,15 +47,31 @@ a:hover {
 }
 
 #info {
-    color: #ddd;
-    font-size: 13px;
-    line-height: 1.5;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+    line-height: 1.4;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.9);
 }
 
-#info b {
+.info-title {
     font-weight: 500;
     font-size: 16px;
+    letter-spacing: 0.01em;
+    color: #f0f3f7;
+}
+
+.info-source {
+    margin-top: 3px;
+    font-size: 12px;
+    color: #9aa4b0;
+}
+
+/* Uppercase micro-hint echoes the panel's label treatment. */
+.info-hint {
+    margin-top: 7px;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8b95a3;
 }
 
 #status {
@@ -74,11 +90,11 @@ a:hover {
     position: absolute;
     bottom: 10px;
     right: 12px;
-    font-size: 11px;
-    line-height: 1.5;
-    color: #999;
+    font-size: 10.5px;
+    line-height: 1.6;
+    color: #8b95a3;
     text-align: right;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.9);
 }
 
 /* Per-viewport labels for side-by-side mode */
@@ -93,13 +109,26 @@ a:hover {
 
 .viewport-label {
     position: absolute;
-    top: 96px;
-    font-size: 13px;
+    top: 94px;
+    font-size: 11.5px;
     font-weight: 500;
-    color: #eee;
+    letter-spacing: 0.03em;
+    color: #e2e7ec;
     text-shadow: 0 1px 5px rgba(0, 0, 0, 0.95);
     display: none;
     box-sizing: border-box;
+}
+
+/* Cyan dot ties the labels to the panel's accent. */
+.viewport-label::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 7px;
+    border-radius: 50%;
+    background: #4cc9f0;
+    vertical-align: middle;
 }
 
 /* Labels flank the center divider so they stay clear of the GUI panel and
@@ -146,9 +175,355 @@ body.side-by-side #container::after {
     pointer-events: none;
 }
 
+/* Draggable control panel. The gear toggles the (collapsed-by-default) GUI so it
+   never overlaps the title, and it can be dragged anywhere by mouse or touch. */
+#controls {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+#gear {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: #ddd;
+    background: rgba(20, 20, 24, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 50%;
+    cursor: grab;
+    touch-action: none;          /* let us handle touch-drag ourselves */
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: background 0.15s, color 0.15s;
+}
+
+#gear:hover {
+    background: rgba(40, 40, 48, 0.9);
+    color: #fff;
+}
+
+#gear:active {
+    cursor: grabbing;
+}
+
+#gear svg {
+    display: block;
+}
+
+/* Fullscreen toggle, bottom-left. Shares the gear's icon-button look. */
+#fs-btn {
+    position: fixed;
+    bottom: 12px;
+    left: 12px;
+    z-index: 100;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: #ddd;
+    background: rgba(20, 20, 24, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 50%;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: background 0.15s, color 0.15s;
+}
+
+#fs-btn:hover {
+    background: rgba(40, 40, 48, 0.9);
+    color: #fff;
+}
+
+#fs-btn.active {
+    color: #4cc9f0;
+    border-color: rgba(76, 201, 240, 0.5);
+}
+
+#fs-btn svg {
+    display: block;
+}
+
+/* Console panel. Collapsed by default; width- and height-capped with an internal
+   scroll so it never overflows a small portrait or landscape screen. */
+#gui-mount {
+    --accent: #4cc9f0;
+    --muted: #8b95a3;
+    --track: rgba(255, 255, 255, 0.14);
+    display: none;
+    width: 244px;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    color: #e8ecf1;
+    background: rgba(12, 14, 18, 0.78);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+}
+
+#controls.open #gui-mount {
+    display: block;
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px 15px 16px;
+}
+
+.grp-label,
+.ctrl label {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.grp-label {
+    margin-bottom: 8px;
+}
+
+/* Editable mono readout pills tie the panel to its "instrument" feel. */
+.ctrl-val {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+input.pill {
+    font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(76, 201, 240, 0.1);
+    border: 1px solid rgba(76, 201, 240, 0.28);
+    border-radius: 999px;
+    padding: 2px 8px;
+    width: 46px;
+    text-align: center;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Hide the native number-input spinners; the slider is the up/down affordance. */
+input.pill::-webkit-outer-spin-button,
+input.pill::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input.pill:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(76, 201, 240, 0.25);
+}
+
+.mini-reset {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--muted);
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.mini-reset:hover {
+    color: var(--accent);
+    border-color: rgba(76, 201, 240, 0.5);
+}
+
+/* Segmented control with a sliding cyan indicator. */
+.seg {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9px;
+    padding: 3px;
+}
+
+.seg-ind {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc((100% - 6px) / 3);
+    background: rgba(76, 201, 240, 0.16);
+    border: 1px solid rgba(76, 201, 240, 0.55);
+    border-radius: 7px;
+    transition: transform 0.22s ease;
+    pointer-events: none;
+}
+
+.seg-btn {
+    position: relative;
+    z-index: 1;
+    background: none;
+    border: 0;
+    padding: 7px 0;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.18s;
+}
+
+.seg-btn.active {
+    color: #fff;
+}
+
+.seg-btn:hover:not(.active) {
+    color: #cdd4dd;
+}
+
+.ctrl {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ctrl-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ctrl-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Custom range: thin track (JS paints the cyan fill) + cyan thumb. */
+.range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--track);
+    outline: none;
+    cursor: pointer;
+}
+
+.range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #0c0e12;
+    box-shadow: 0 0 0 1px rgba(76, 201, 240, 0.5);
+}
+
+.range::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #0c0e12;
+    box-shadow: 0 0 0 1px rgba(76, 201, 240, 0.5);
+}
+
+.range:focus-visible {
+    box-shadow: 0 0 0 2px rgba(76, 201, 240, 0.4);
+}
+
+/* Pill switch. */
+.switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s;
+}
+
+.switch .knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #cdd4dd;
+    transition: transform 0.18s, background 0.18s;
+}
+
+.switch.on {
+    background: rgba(76, 201, 240, 0.22);
+    border-color: rgba(76, 201, 240, 0.6);
+}
+
+.switch.on .knob {
+    transform: translateX(18px);
+    background: var(--accent);
+}
+
+.ghost-btn {
+    margin-top: 2px;
+    padding: 9px 0;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: #cdd4dd;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+
+.ghost-btn:hover {
+    color: #fff;
+    background: rgba(76, 201, 240, 0.14);
+    border-color: rgba(76, 201, 240, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .seg-ind,
+    .seg-btn,
+    .switch,
+    .switch .knob,
+    .ghost-btn { transition: none; }
+}
+
 @media (max-width: 640px) {
-    #info b { font-size: 14px; }
-    #info { font-size: 11px; }
-    #footer { font-size: 10px; }
-    .viewport-label { font-size: 11px; top: 88px; }
+    .info-title { font-size: 14px; }
+    .info-source { font-size: 11px; }
+    .info-hint { font-size: 9.5px; }
+    #footer { font-size: 9.5px; }
+    .viewport-label { font-size: 10.5px; top: 84px; }
 }

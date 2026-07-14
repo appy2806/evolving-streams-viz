@@ -407,8 +407,11 @@ function setupControlPanel() {
         }
     });
 
-    // Keep it on-screen through rotation / resize.
+    // Keep it on-screen through rotation / resize. Skip while the panel is hidden
+    // (collapsed embed): a display:none element has a zero rect, which would compute
+    // a bogus off-screen position and strand the gear when fullscreen reveals it.
     window.addEventListener('resize', () => {
+        if (!controls.offsetParent) return;
         const p = currentPos();
         place(p.right, p.top);
     });
@@ -439,12 +442,14 @@ function setupFullscreen() {
         btn.classList.toggle('active', fs);
         // In embed mode this reveals the (otherwise hidden) control panel.
         document.body.classList.toggle('fs', fs);
-        // Fullscreen from an embed is a "give me the full experience" gesture, so
-        // open the panel outright rather than leaving just the collapsed gear.
-        if (EMBED) {
+        // Promoting an embed to fullscreen should match the main site: a collapsed
+        // gear in the default top-right corner. Clear any stale inline position so it
+        // snaps back to the corner, and make sure it starts collapsed.
+        if (EMBED && fs) {
             const ctrls = document.getElementById('controls');
-            ctrls.classList.toggle('open', fs);
-            document.getElementById('gear').setAttribute('aria-expanded', fs ? 'true' : 'false');
+            ctrls.style.left = ctrls.style.right = ctrls.style.top = '';
+            ctrls.classList.remove('open');
+            document.getElementById('gear').setAttribute('aria-expanded', 'false');
         }
         onWindowResize();
     };

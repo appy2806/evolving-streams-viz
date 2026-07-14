@@ -210,16 +210,18 @@ function init() {
     frameCamera();
     updateCameraAspect();
 
-    if (!EMBED) {
-        wireControls();       // custom console panel
-        setupControlPanel();  // gear toggle + drag behavior
-    } else {
-        document.getElementById('controls').style.display = 'none';
-    }
+    // Always wire the panel. In embed mode it's hidden inline (CSS), but going
+    // fullscreen promotes the embed to the full experience, so the controls must
+    // already exist and work.
+    wireControls();       // custom console panel
+    setupControlPanel();  // gear toggle + drag behavior
+    if (EMBED) document.body.classList.add('embed');
+
     applyViewMode();
     setStreams(guiConfig.nStreams);   // default subset applied to both models
     setupHint();                      // touch-aware interaction wording
     setupFullscreen();                // shown in embed too
+    setupCleanView();                 // eye toggle: hide all overlay text
 
     if (DEV_STATS) {
         import('three/addons/libs/stats.module.js').then(({ default: Stats }) => {
@@ -433,11 +435,34 @@ function setupFullscreen() {
         }
     });
     const onChange = () => {
-        btn.classList.toggle('active', !!(document.fullscreenElement || document.webkitFullscreenElement));
+        const fs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        btn.classList.toggle('active', fs);
+        // In embed mode this reveals the (otherwise hidden) control panel.
+        document.body.classList.toggle('fs', fs);
+        // Fullscreen from an embed is a "give me the full experience" gesture, so
+        // open the panel outright rather than leaving just the collapsed gear.
+        if (EMBED) {
+            const ctrls = document.getElementById('controls');
+            ctrls.classList.toggle('open', fs);
+            document.getElementById('gear').setAttribute('aria-expanded', fs ? 'true' : 'false');
+        }
         onWindowResize();
     };
     document.addEventListener('fullscreenchange', onChange);
     document.addEventListener('webkitfullscreenchange', onChange);
+}
+
+// Clean view: fade out all overlay text (title, credits, labels) for a pristine
+// still. The eye button itself recedes but stays reachable (see style.css).
+function setupCleanView() {
+    const btn = document.getElementById('clean-btn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        const hidden = document.body.classList.toggle('chrome-hidden');
+        btn.classList.toggle('active', hidden);
+        btn.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+        btn.title = hidden ? 'Show text' : 'Hide text';
+    });
 }
 
 function updateToggleLabel() {

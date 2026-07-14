@@ -204,7 +204,7 @@ body.side-by-side #container::after {
     touch-action: none;          /* let us handle touch-drag ourselves */
     -webkit-tap-highlight-color: transparent;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s, opacity 0.2s;
 }
 
 #gear:hover {
@@ -220,11 +220,11 @@ body.side-by-side #container::after {
     display: block;
 }
 
-/* Fullscreen toggle, bottom-left. Shares the gear's icon-button look. */
-#fs-btn {
+/* Fullscreen toggle (bottom-left) and clean-view toggle (top-right, beside the
+   gear) share the gear's icon-button look. */
+#fs-btn,
+#clean-btn {
     position: fixed;
-    bottom: 12px;
-    left: 12px;
     z-index: 100;
     width: 38px;
     height: 38px;
@@ -239,21 +239,73 @@ body.side-by-side #container::after {
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s, opacity 0.2s;
 }
 
-#fs-btn:hover {
+#fs-btn { bottom: 12px; left: 12px; }
+/* Hug the gear's default top-right slot (gear is 38px at right:12). */
+#clean-btn { top: 12px; right: 55px; }
+
+#fs-btn:hover,
+#clean-btn:hover {
     background: rgba(40, 40, 48, 0.9);
     color: #fff;
 }
 
-#fs-btn.active {
+#fs-btn.active,
+#clean-btn.active {
     color: #4cc9f0;
     border-color: rgba(76, 201, 240, 0.5);
 }
 
-#fs-btn svg {
+#fs-btn svg,
+#clean-btn svg {
     display: block;
+}
+
+/* Eye shows while text is visible; eye-off once it's hidden. */
+#clean-btn .icon-eye-off { display: none; }
+#clean-btn.active .icon-eye { display: none; }
+#clean-btn.active .icon-eye-off { display: block; }
+
+/* Clean view: fade out every overlay text element, leaving the streams on black.
+   The icon buttons stay reachable but recede to near-invisible so a screenshot is
+   pristine; they return on hover (or when the panel is open). */
+#info,
+#footer,
+#labels {
+    transition: opacity 0.3s ease;
+}
+
+body.chrome-hidden #info,
+body.chrome-hidden #footer,
+body.chrome-hidden #labels {
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.chrome-hidden #gear,
+body.chrome-hidden #fs-btn,
+body.chrome-hidden #clean-btn {
+    opacity: 0.12;
+}
+
+body.chrome-hidden #controls.open #gear,
+body.chrome-hidden #gear:hover,
+body.chrome-hidden #fs-btn:hover,
+body.chrome-hidden #clean-btn:hover {
+    opacity: 1;
+}
+
+/* Embed: the control panel is hidden inline, but fullscreen (body.fs) promotes the
+   embed to the full experience, so the gear comes back. */
+body.embed:not(.fs) #controls {
+    display: none;
+}
+
+/* With the gear hidden inline, the eye takes the corner slot itself. */
+body.embed:not(.fs) #clean-btn {
+    right: 12px;
 }
 
 /* Console panel. Collapsed by default; width- and height-capped with an internal
@@ -517,10 +569,18 @@ input.pill:focus {
     .seg-btn,
     .switch,
     .switch .knob,
-    .ghost-btn { transition: none; }
+    .ghost-btn,
+    #info,
+    #footer,
+    #labels,
+    #gear,
+    #fs-btn,
+    #clean-btn { transition: none; }
 }
 
 @media (max-width: 640px) {
+    /* Keep the centered title clear of the top-right button cluster on portrait. */
+    .top-center { padding-left: 50px; padding-right: 50px; }
     .info-title { font-size: 14px; }
     .info-source { font-size: 11px; }
     .info-hint { font-size: 9.5px; }

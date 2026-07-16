@@ -1,0 +1,9 @@
+{
+  "name": "evolving-streams-gif-export",
+  "private": true,
+  "description": "Internal: headless frame capture + gifski encode for the viz. Not part of the shipped site.",
+  "dependencies": {
+    "puppeteer-core": "^22",
+    "gifski": "^1.7"
+  }
+}

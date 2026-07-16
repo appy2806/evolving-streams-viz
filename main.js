@@ -10,6 +10,13 @@ const ENABLE_BLOOM = false; // post-processing glow, wired but off (sprites alre
 // side-by-side comparison with no chrome.
 const EMBED = new URLSearchParams(window.location.search).has('embed');
 
+// Export mode (?export=1): a headless-friendly hook for capturing a smooth, perfectly
+// looping rotation. Hides all chrome, disables the live animation loop, and exposes
+// window.__viz so a frame grabber can deterministically place the camera per frame.
+// Fully gated: no effect on the shipped site unless the flag is present.
+const params = new URLSearchParams(window.location.search);
+const EXPORT = params.has('export');
+
 // --- tunables ---
 const DISK_RADIUS = 15.5;   // kpc, matches the reference
 const BASE_OPACITY = 0.65;  // point-cloud opacity in toggle mode
@@ -235,8 +242,54 @@ function init() {
     window.addEventListener('resize', onWindowResize);
     statusEl.style.display = 'none';
 
+    if (EXPORT) {
+        setupExport();   // deterministic per-frame orbit for headless capture
+        return;          // no live rAF loop; the grabber drives rendering
+    }
+
     lastTime = performance.now();
     animate();
+}
+
+// Deterministic capture hook. The live view auto-rotates about z (camera up); here we
+// reproduce that orbit (plus an optional zoom) as a pure function of the camera pose so
+// an external grabber can render exactly one seamless loop. No damping, no rAF, no
+// chrome. The grabber owns the loop math; this just exposes a pose setter.
+function setupExport() {
+    document.body.classList.add('export');
+    controls.autoRotate = false;
+    controls.enableDamping = false;
+
+    // ?model=evolving|static|both picks the layout to capture (default: the site's both).
+    const model = params.get('model');
+    if (model === 'evolving' || model === 'static' || model === 'both') {
+        setModelMode(model === 'both' ? 'both' : model);
+    }
+
+    const target = initialCamera.target.clone();
+    const zAxis = new THREE.Vector3(0, 0, 1);
+
+    // Place the camera at azimuth `azRad` about z, `distKpc` from the target, tilted
+    // `elevDeg` above the disk plane (32 deg matches the site's default framing).
+    function pose(azRad, distKpc, elevDeg) {
+        const e = elevDeg * Math.PI / 180;
+        const dir = new THREE.Vector3(0, -Math.cos(e), Math.sin(e));   // toward -y, tilted up
+        const off = dir.multiplyScalar(distKpc).applyAxisAngle(zAxis, azRad);
+        camera.position.copy(target).add(off);
+        camera.up.copy(zAxis);
+        camera.lookAt(target);
+        camera.updateProjectionMatrix();
+        render();
+    }
+
+    window.__viz = {
+        canvas: renderer.domElement,
+        pose,
+        // Convenience single-shot used for the initial paint / static preview.
+        renderFrameAt(frac, dist = 30, elev = 32) { pose(frac * Math.PI * 2, dist, elev); },
+    };
+    window.__vizReady = true;
+    pose(0, parseFloat(params.get('view')) || 30, 32);
 }
 
 // Switch between the three model views. 'both' is side-by-side; the single-model

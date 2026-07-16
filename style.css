@@ -297,6 +297,18 @@ body.chrome-hidden #clean-btn:hover {
     opacity: 1;
 }
 
+/* Export capture (?export=1): remove every scrap of chrome so the canvas is the only
+   thing on screen. Buttons and labels go fully, not just faded. */
+body.export #info,
+body.export #footer,
+body.export #labels,
+body.export #gear,
+body.export #controls,
+body.export #fs-btn,
+body.export #clean-btn {
+    display: none !important;
+}
+
 /* Embed: the control panel is hidden inline, but fullscreen (body.fs) promotes the
    embed to the full experience, so the gear comes back. */
 body.embed:not(.fs) #controls {

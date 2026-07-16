@@ -1,6 +1,11 @@
 # internal / working files, not for the public repo
 CLAUDE.md
-prepare_data.py
+# prepare_data.py and make_gif.py ARE committed (reproducible pipeline for other users).
+# They are inert for the site render: index.html never loads them.
+# The gif_export/ scripts are committed, but its node deps and generated GIFs are not:
+gif_export/node_modules/
+renders/
+*.gif
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
